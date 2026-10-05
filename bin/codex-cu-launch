@@ -1,0 +1,14 @@
+#!/bin/zsh
+# Launches Codex/ChatGPT's computer-use MCP server (cua_repl) over stdio.
+# The real command/args/env are re-resolved from the newest installed
+# unified-computer-use plugin on every start, so ChatGPT updates are picked up
+# automatically. Nothing may be written to stdout before exec (it's the MCP pipe).
+#   CODEX_CU_MCP_JSON=/path/.mcp.json   pin a specific definition
+#   CODEX_CU_DRY_RUN=1                  print the resolved launch script instead
+emulate -L zsh
+here=${0:A:h}
+script=$(/usr/bin/osascript -l JavaScript "$here/resolve.js" 2>&1) || {
+  print -u2 -- "codex-cu: resolver failed: $script"; exit 1
+}
+if [[ -n $CODEX_CU_DRY_RUN ]]; then print -r -- "$script"; exit 0; fi
+eval "$script"

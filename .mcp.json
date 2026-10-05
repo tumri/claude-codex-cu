@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "codex-cu": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/codex-cu-launch"
+    }
+  }
+}

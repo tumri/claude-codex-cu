@@ -1,0 +1,45 @@
+#!/bin/zsh
+# Health check for the codex-cu bridge: resolves the current cua_repl definition,
+# then performs a real MCP initialize + tools/list against it.
+# Uses the node binary that ships inside ChatGPT.app, so no extra deps.
+emulate -L zsh
+here=${0:A:h}
+ok()   { print -P "%F{green}✓%f $*" }
+bad()  { print -P "%F{red}✗%f $*"; exit 1 }
+
+[[ -d /Applications/ChatGPT.app ]] && ok "ChatGPT.app present ($(defaults read /Applications/ChatGPT.app/Contents/Info CFBundleShortVersionString 2>/dev/null))" \
+  || bad "ChatGPT.app not found in /Applications"
+
+script=$(CODEX_CU_DRY_RUN=1 "$here/codex-cu-launch" 2>&1) || bad "resolve failed: $script"
+src=${${(M)${(f)script}:#export CODEX_CU_RESOLVED=*}#export CODEX_CU_RESOLVED=}
+ok "definition: ${(Q)src}"
+cmd=${${(M)${(f)script}:#exec *}#exec }
+node=${(Q)${(z)cmd}[1]}
+[[ -x $node ]] && ok "server runtime: $node" || bad "missing runtime $node"
+
+print "… MCP handshake (first start can take a while)"
+"$node" - "$here/codex-cu-launch" <<'EOF'
+const { spawn } = require('child_process');
+const p = spawn(process.argv[2], [], { stdio: ['pipe', 'pipe', 'inherit'] });
+let buf = '';
+const send = (m) => p.stdin.write(JSON.stringify(m) + '\n');
+const t = setTimeout(() => { console.log('✗ timed out after 120s'); p.kill(); process.exit(1); }, 120000);
+p.stdout.on('data', (d) => {
+  buf += d;
+  let i;
+  while ((i = buf.indexOf('\n')) >= 0) {
+    const m = JSON.parse(buf.slice(0, i)); buf = buf.slice(i + 1);
+    if (m.id === 1) {
+      console.log(`✓ server ${m.result.serverInfo.name} ${m.result.serverInfo.version}`);
+      send({ jsonrpc: '2.0', method: 'notifications/initialized' });
+      send({ jsonrpc: '2.0', id: 2, method: 'tools/list' });
+    } else if (m.id === 2) {
+      const names = m.result.tools.map((x) => x.name);
+      console.log(`✓ tools: ${names.join(', ')}`);
+      if (!names.includes('js')) { console.log('✗ expected a "js" tool; the API may have changed'); process.exitCode = 1; }
+      clearTimeout(t); p.kill();
+    }
+  }
+});
+send({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: { elicitation: {} }, clientInfo: { name: 'codex-cu-doctor', version: '1' } } });
+EOF

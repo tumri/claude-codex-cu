@@ -1,0 +1,7 @@
+{
+  "name": "codex-computer-use",
+  "version": "0.3.2",
+  "description": "Use the Codex/ChatGPT app's background Computer Use engine (cua_repl) from Claude Code. Real clicks, drags and typing into macOS apps without moving your cursor.",
+  "author": { "name": "tumri" },
+  "keywords": ["computer-use", "macos", "codex", "automation"]
+}

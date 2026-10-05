@@ -1,0 +1,67 @@
+{
+  "description": "Mirror Codex's turn_ended notification so cua_repl releases its per-turn state (overlay, app sessions) when Claude stops.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "mcp_tool",
+            "server": "plugin:codex-computer-use:codex-cu",
+            "tool": "turn_ended",
+            "timeout": 10,
+            "input": {
+              "hook_event_name": "Stop",
+              "session_id": "${session_id}",
+              "turn_id": "${session_id}/${prompt_id}"
+            }
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "mcp_tool",
+            "server": "plugin:codex-computer-use:codex-cu",
+            "tool": "turn_ended",
+            "timeout": 10,
+            "input": {
+              "hook_event_name": "Interrupt",
+              "session_id": "${session_id}",
+              "turn_id": "${session_id}/${prompt_id}"
+            }
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "mcp_tool",
+            "server": "plugin:codex-computer-use:codex-cu",
+            "tool": "turn_ended",
+            "timeout": 10,
+            "input": {
+              "hook_event_name": "SubagentStop",
+              "session_id": "${agent_id}",
+              "turn_id": "${agent_id}/${prompt_id}"
+            }
+          }
+        ]
+      }
+    ],
+    "Elicitation": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 150,
+            "command": "/usr/bin/osascript -l JavaScript \"${CLAUDE_PLUGIN_ROOT}/hooks/approve-elicitation.js\""
+          }
+        ]
+      }
+    ]
+  }
+}

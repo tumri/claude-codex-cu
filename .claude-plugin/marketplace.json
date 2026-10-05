@@ -1,0 +1,14 @@
+{
+  "name": "codex-computer-use",
+  "description": "Bridge to the Codex/ChatGPT Computer Use engine",
+  "owner": {
+    "name": "tumri"
+  },
+  "plugins": [
+    {
+      "name": "codex-computer-use",
+      "source": "./",
+      "description": "Codex/ChatGPT Computer Use engine for Claude Code"
+    }
+  ]
+}
